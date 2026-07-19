@@ -659,7 +659,7 @@ body.placing #hud>*{pointer-events:none!important;}
             <div class="dragon-card-desc">A smoldering stone fortress built atop a lava flow. Ideal for fire dragons.</div>
             <button id="tut-fire-habitat-btn" class="dragon-card-buy"><span class="dc-coin">🪙</span><span>500</span></button>
           </div>
-          <div class="dragon-card">
+          <div class="dragon-card" style="display:none">
             <div class="habitat-frame">
               <canvas class="habitat-canvas" data-habitat="grass" width="220" height="220"></canvas>
             </div>
@@ -667,7 +667,7 @@ body.placing #hud>*{pointer-events:none!important;}
             <div class="dragon-card-desc">A lush forest glade where nature thrives. Perfect for grass dragons.</div>
             <button class="dragon-card-buy"><span class="dc-coin">🪙</span><span>1100</span></button>
           </div>
-          <div class="dragon-card">
+          <div class="dragon-card" style="display:none">
             <div class="habitat-frame">
               <canvas class="habitat-canvas" data-habitat="earth" width="220" height="220"></canvas>
             </div>
@@ -675,7 +675,7 @@ body.placing #hud>*{pointer-events:none!important;}
             <div class="dragon-card-desc">Ancient stone arches and cracked earth. A domain for earth dragons.</div>
             <button class="dragon-card-buy"><span class="dc-coin">🪙</span><span>3500</span></button>
           </div>
-          <div class="dragon-card">
+          <div class="dragon-card" style="display:none">
             <div class="habitat-frame">
               <canvas class="habitat-canvas" data-habitat="ice" width="220" height="220"></canvas>
             </div>
@@ -683,7 +683,7 @@ body.placing #hud>*{pointer-events:none!important;}
             <div class="dragon-card-desc">A frozen lake surrounded by snow, ice crystals and a cozy igloo.</div>
             <button class="dragon-card-buy"><span class="dc-coin">🪙</span><span>8000</span></button>
           </div>
-          <div class="dragon-card">
+          <div class="dragon-card" style="display:none">
             <div class="habitat-frame">
               <canvas class="habitat-canvas" data-habitat="water" width="220" height="220"></canvas>
             </div>
@@ -2840,6 +2840,38 @@ function drawSideObsidianDragon(ctx, W, H, p){
   ctx.fillStyle=GLT; ctx.beginPath(); ctx.arc(41,-37,3.2,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#0a2208'; ctx.beginPath(); ctx.arc(41,-37,1.8,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(39,-39,1.2,0,Math.PI*2); ctx.fill();
+  // Spine crystal spikes — behind front wing
+  [[-10,-16],[0,-20],[12,-19],[22,-13]].forEach(([sx,sy])=>{
+    ctx.save(); ctx.translate(sx,sy);
+    // Rock base
+    ctx.fillStyle=GRN; ctx.strokeStyle=INK; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(-4,4); ctx.lineTo(-3,-2); ctx.lineTo(0,-10); ctx.lineTo(3,-2); ctx.lineTo(4,4); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Lava crack
+    const g=0.5+Math.sin(performance.now()/600+sx)*0.35;
+    ctx.strokeStyle=`rgba(255,${Math.floor(80+g*60)},0,${0.5+g*0.3})`; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,3); ctx.lineTo(-1,-5); ctx.stroke();
+    ctx.restore();
+  });
+
+  // Crystal horn on head — twin jagged
+  ctx.save(); ctx.translate(36,-48);
+  ctx.fillStyle=GDK; ctx.strokeStyle=LIME; ctx.lineWidth=1.5;
+  // Main spike
+  ctx.beginPath(); ctx.moveTo(-4,4); ctx.lineTo(-5,-6); ctx.lineTo(0,-22); ctx.lineTo(5,-6); ctx.lineTo(4,4); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // Side spike
+  ctx.beginPath(); ctx.moveTo(4,2); ctx.lineTo(5,-4); ctx.lineTo(10,-14); ctx.lineTo(12,-4); ctx.lineTo(10,2); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // Lava glows
+  const gh=0.6+Math.sin(performance.now()/400)*0.35;
+  ctx.strokeStyle=`rgba(255,100,0,${gh})`; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,2); ctx.lineTo(-1,-12); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(9,-8); ctx.stroke();
+  ctx.restore();
+
+
+
   // Front wing
   ctx.save(); ctx.translate(4,-8);
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-16+p.wing*10,-28+p.wing*7); ctx.quadraticCurveTo(-2+p.wing*3,-22,8+p.wing*3,-36+p.wing*4); ctx.quadraticCurveTo(18+p.wing*3,-24,28,-18+p.wing*3); ctx.quadraticCurveTo(16,-4,0,0); ctx.closePath();
@@ -2864,36 +2896,6 @@ function drawSideObsidianDragon(ctx, W, H, p){
   const glw=0.5+Math.sin(performance.now()/500)*0.4;
   ctx.strokeStyle=`rgba(255,120,0,${glw})`; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-10); ctx.stroke();
-  ctx.restore();
-
-  // Spine crystal spikes — behind front wing
-  [[-10,-16],[0,-20],[12,-19],[22,-13]].forEach(([sx,sy])=>{
-    ctx.save(); ctx.translate(sx,sy);
-    // Rock base
-    ctx.fillStyle=GRN; ctx.strokeStyle=INK; ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.moveTo(-4,4); ctx.lineTo(-3,-2); ctx.lineTo(0,-10); ctx.lineTo(3,-2); ctx.lineTo(4,4); ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    // Lava crack
-    const g=0.5+Math.sin(performance.now()/600+sx)*0.35;
-    ctx.strokeStyle=`rgba(255,${Math.floor(80+g*60)},0,${0.5+g*0.3})`; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(0,3); ctx.lineTo(-1,-5); ctx.stroke();
-    ctx.restore();
-  });
-
-  // Crystal horn on head — twin jagged
-  ctx.save(); ctx.translate(40,-56);
-  ctx.fillStyle=GDK; ctx.strokeStyle=LIME; ctx.lineWidth=1.5;
-  // Main spike
-  ctx.beginPath(); ctx.moveTo(-4,4); ctx.lineTo(-5,-6); ctx.lineTo(0,-22); ctx.lineTo(5,-6); ctx.lineTo(4,4); ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Side spike
-  ctx.beginPath(); ctx.moveTo(4,2); ctx.lineTo(5,-4); ctx.lineTo(10,-14); ctx.lineTo(12,-4); ctx.lineTo(10,2); ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Lava glows
-  const gh=0.6+Math.sin(performance.now()/400)*0.35;
-  ctx.strokeStyle=`rgba(255,100,0,${gh})`; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,2); ctx.lineTo(-1,-12); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(9,-8); ctx.stroke();
   ctx.restore();
 
   ctx.restore();
@@ -3563,6 +3565,8 @@ function openHabitatMenu(idx){
       else if(dragon==='frost') drawFrostDragon(cv.getContext('2d'), sz, sz, staticPhys);
       else if(dragon==='magma') drawMagmaDragon(cv.getContext('2d'), sz, sz, staticPhys);
       else if(dragon==='forest') drawForestDragon(cv.getContext('2d'), sz, sz, staticPhys);
+      else if(dragon==='obsidian') drawObsidianDragon(cv.getContext('2d'), sz, sz, staticPhys);
+      else if(dragon==='coral') drawCoralDragon(cv.getContext('2d'), sz, sz, staticPhys);
       else drawFireDragon(cv.getContext('2d'), sz, sz, staticPhys);
       imgBox.appendChild(cv);
       // Element badge - bottom left
@@ -6738,18 +6742,22 @@ function initBuildingCanvases(){
 
 function initDragonCanvases() {
   document.querySelectorAll('canvas.dragon-canvas').forEach(cv=>{
-    if (cv._dragonInit && cv.width > 1) return; // skip if already initialized with real size
+    if (cv._dragonInit) return;
     cv._dragonInit = true;
     const dctx = cv.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const type = cv.dataset.dragon || 'fire';
+    let lastW = 0, lastH = 0;
     function fit(){
       const r = cv.getBoundingClientRect();
-      if(r.width===0||r.height===0) return; // skip if hidden
-      cv.width = Math.max(1,r.width*dpr); cv.height = Math.max(1,r.height*dpr);
-      dctx.setTransform(dpr,0,0,dpr,0,0);
+      if(r.width < 10 || r.height < 10) return;
+      if(Math.abs(r.width - lastW) < 1 && Math.abs(r.height - lastH) < 1) return;
+      lastW = r.width; lastH = r.height;
+      cv.width = Math.round(r.width * dpr);
+      cv.height = Math.round(r.height * dpr);
+      dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    fit();
+    fit(); setTimeout(fit, 50); setTimeout(fit, 150);
     window.addEventListener('resize', fit);
     const phys = type==='earth' ? makeEarthDragonPhysics() : makeDragonPhysics();
     let last = performance.now();
@@ -6757,9 +6765,8 @@ function initDragonCanvases() {
       requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now-last)/1000); last = now;
       const r = cv.getBoundingClientRect();
-      if(r.width===0||r.height===0) return; // hidden, skip
-      // Refit if canvas not sized yet
-      if(cv.width<=1||cv.height<=1) fit();
+      if(r.width < 10 || r.height < 10) return;
+      if(Math.abs(r.width - lastW) > 1 || Math.abs(r.height - lastH) > 1) fit();
       if(type==='fire'){   stepDragonPhysics(phys,dt);  drawFireDragon(dctx,r.width,r.height,phys); }
       else if(type==='grass'){ stepDragonPhysics(phys,dt); drawGrassDragon(dctx,r.width,r.height,phys); }
       else if(type==='earth'){ stepEarthDragonPhysics(phys,dt); drawEarthDragon(dctx,r.width,r.height,phys); }
@@ -6778,7 +6785,12 @@ function initDragonCanvases() {
   });
 }
 const _origOpenShop = openShop;
-openShop = function(){ _origOpenShop(); requestAnimationFrame(()=>{ initDragonCanvases(); initHabitatCanvases(); initBuildingCanvases(); }); };
+openShop = function(){
+  _origOpenShop();
+  document.querySelectorAll('canvas.dragon-canvas').forEach(cv=>{ cv._dragonInit=false; });
+  requestAnimationFrame(()=>{ initDragonCanvases(); initHabitatCanvases(); initBuildingCanvases(); });
+  setTimeout(initDragonCanvases, 100);
+};
 
 
 // ══════════════════════════════════════════════════════
@@ -7922,7 +7934,7 @@ function updateShopButtons(){
     {type:'bluefire', unlock:12, visible:10, cost:93750},
     {type:'magma',    unlock:7,  visible:5,  cost:112500},
     {type:'obsidian', unlock:9, visible:7, cost:156000},
-    {type:'coral',    unlock:9, visible:7, cost:220000},
+    {type:'coral',    unlock:16, visible:14, cost:220000},
     {type:'frost',    unlock:99, visible:12, cost:67500},   // Breed only: Ice+Water (5%)
   ];
   const lv = game.level||1;
@@ -7943,6 +7955,30 @@ function updateShopButtons(){
       btn.disabled=false; btn.innerHTML=`<span class="dc-coin">🪙</span><span>${cost.toLocaleString()}</span>`; btn.style.opacity='1'; btn.style.cursor='pointer';
     }
   });
+
+  // ── Habitat lock states ──
+  const habitatDefs = [
+    {type:'fire',  unlock:1,  visible:1},
+    {type:'grass', unlock:1,  visible:1},
+    {type:'earth', unlock:6,  visible:4},
+    {type:'ice',   unlock:12, visible:10},
+    {type:'water', unlock:16, visible:14},
+  ];
+  const habitatCosts = {fire:500, grass:1100, earth:3500, ice:8000, water:15000};
+  habitatDefs.forEach(({type, unlock, visible})=>{
+    const card = document.querySelector(`canvas[data-habitat="${type}"]`)?.closest('.dragon-card');
+    if(!card) return;
+    if(lv < visible){ card.style.display='none'; return; }
+    card.style.display='';
+    const btn = card.querySelector('.dragon-card-buy');
+    if(!btn) return;
+    if(lv < unlock){
+      btn.disabled=true; btn.textContent=`🔒 Level ${unlock}`; btn.style.opacity='0.5'; btn.style.cursor='default';
+    } else {
+      btn.disabled=false; btn.innerHTML=`<span class="dc-coin">🪙</span><span>${habitatCosts[type].toLocaleString()}</span>`; btn.style.opacity='1'; btn.style.cursor='pointer';
+    }
+  });
+
   const earthBtn = document.getElementById('earth-dragon-buy-btn');
 
   // ── Hatchery built state ──
@@ -8657,6 +8693,8 @@ function openDragonPicker(slotIdx){
       else if(type==='frost') drawFrostDragon(canvas.getContext('2d'),80,80,phys);
       else if(type==='magma') drawMagmaDragon(canvas.getContext('2d'),80,80,phys);
       else if(type==='forest') drawForestDragon(canvas.getContext('2d'),80,80,phys);
+      else if(type==='obsidian') drawObsidianDragon(canvas.getContext('2d'),80,80,phys);
+      else if(type==='coral') drawCoralDragon(canvas.getContext('2d'),80,80,phys);
       else drawFireDragon(canvas.getContext('2d'),80,80,phys);
       card.appendChild(canvas);
       const name = document.createElement('div');
@@ -8706,6 +8744,8 @@ function updateBreedSlots(){
       else if(sel.type==='frost') drawFrostDragon(cv.getContext('2d'),160,160,phys);
       else if(sel.type==='magma') drawMagmaDragon(cv.getContext('2d'),160,160,phys);
       else if(sel.type==='forest') drawForestDragon(cv.getContext('2d'),160,160,phys);
+      else if(sel.type==='obsidian') drawObsidianDragon(cv.getContext('2d'),160,160,phys);
+      else if(sel.type==='coral') drawCoralDragon(cv.getContext('2d'),160,160,phys);
       else drawFireDragon(cv.getContext('2d'),160,160,phys);
       slot.innerHTML='';
       slot.appendChild(cv);
@@ -8792,16 +8832,25 @@ const _origCloseBreeder = ()=>{
 function getBreedingOdds(t1, t2){
   const classicSpecials=['poison'];
   const newSpecials=['bluefire','mud','magma','forest'];
+  const rareSpecials=['obsidian','coral'];
   const isClassicSpecial=t=>classicSpecials.includes(t);
   const isNewSpecial=t=>newSpecials.includes(t);
-  const isSpecial=t=>classicSpecials.includes(t)||newSpecials.includes(t);
+  const isRareSpecial=t=>rareSpecials.includes(t);
+  const isSpecial=t=>[...classicSpecials,...newSpecials,...rareSpecials].includes(t);
   const sorted=[t1,t2].sort();
   const combo=sorted.join('+');
 
   // Ice + Water → 5% frost
-  if(combo==='ice+water') return [{type:'obsidian', unlock:9, visible:7, cost:156000},
-    {type:'coral',    unlock:9, visible:7, cost:220000},
-    {type:'frost',pct:5},{type:'ice',pct:47.5},{type:'water',pct:47.5}];
+  if(combo==='ice+water') return [{type:'frost',pct:5},{type:'ice',pct:47.5},{type:'water',pct:47.5}];
+
+  // Earth + Fire → 5% obsidian + 5% magma
+  if(combo==='earth+fire')  return [{type:'obsidian',pct:5},{type:'magma',pct:5},{type:'earth',pct:45},{type:'fire',pct:45}];
+
+  // Water + Grass → 5% coral
+  if(combo==='water+grass') return [{type:'coral',pct:5},{type:'water',pct:47.5},{type:'grass',pct:47.5}];
+
+  // 2 of same rare special → 10%
+  if(t1===t2 && isRareSpecial(t1)) return [{type:t1,pct:10},{type:'mystery',pct:90}];
 
   // 2 of same new special → 10%
   if(t1===t2 && isNewSpecial(t1)) return [{type:t1,pct:10},{type:'mystery',pct:90}];
@@ -8812,10 +8861,21 @@ function getBreedingOdds(t1, t2){
   // 2 of same normal → 100%
   if(t1===t2) return [{type:t1,pct:100}];
 
-  // 2 different specials → 10% each, rest mystery
+  // Rare special + rare special (different) → 5% + 5%
+  if(isRareSpecial(t1)&&isRareSpecial(t2)) return [{type:t1,pct:5},{type:t2,pct:5},{type:'mystery',pct:90}];
+
+  // Rare special + any other special → 5% + 5%
+  if(isRareSpecial(t1)||isRareSpecial(t2)){
+    const sp=isRareSpecial(t1)?t1:t2;
+    const other=isRareSpecial(t1)?t2:t1;
+    if(isSpecial(other)) return [{type:sp,pct:5},{type:other,pct:5},{type:'mystery',pct:90}];
+    return [{type:sp,pct:5},{type:other,pct:47.5},{type:'mystery',pct:47.5}];
+  }
+
+  // 2 different new/classic specials → 10% each, rest mystery
   if(isSpecial(t1)&&isSpecial(t2)) return [{type:t1,pct:10},{type:t2,pct:10},{type:'mystery',pct:80}];
 
-  // New special + anything → 5% special
+  // New special + normal → 5% special
   if(isNewSpecial(t1)||isNewSpecial(t2)){
     const sp=isNewSpecial(t1)?t1:t2;
     const no=isNewSpecial(t1)?t2:t1;
@@ -8833,7 +8893,6 @@ function getBreedingOdds(t1, t2){
   if(combo==='fire+grass') return [{type:'poison',pct:10},{type:'fire',pct:45},{type:'grass',pct:45}];
   if(combo==='fire+ice')   return [{type:'bluefire',pct:10},{type:'fire',pct:45},{type:'ice',pct:45}];
   if(combo==='earth+water') return [{type:'mud',pct:5},{type:'earth',pct:47.5},{type:'water',pct:47.5}];
-  if(combo==='earth+fire')  return [{type:'magma',pct:5},{type:'earth',pct:47.5},{type:'fire',pct:47.5}];
   if(combo==='earth+grass') return [{type:'forest',pct:5},{type:'earth',pct:47.5},{type:'grass',pct:47.5}];
 
   // Default normal+normal → 50/50
@@ -8902,7 +8961,27 @@ function openNewsPanel(){
   el.style.cssText='position:fixed;z-index:300;bottom:0;left:50%;transform:translateX(-50%);width:min(660px,100vw);background:linear-gradient(160deg,#1e1500,#100c00);border:2px solid rgba(220,180,40,0.5);border-bottom:none;border-radius:18px 18px 0 0;padding:28px 28px 40px;z-index:200;box-shadow:0 -4px 32px rgba(120,80,0,0.6);max-height:80vh;display:flex;flex-direction:column;';
 
   const news = [
-    { date:'2026-07-14', title:'🌊 Aquatic Update', items:[
+    { date:'2026-07-18', title:'Fix Save Game Data — Version 1.0.3', items:[
+      'Fixed an issue where game progress was not saved between sessions',
+    ]},
+    { date:'2026-07-18', title:'Bug Fixes — Version 1.0.2', items:[
+      'Fixed Obsidian and Coral dragons showing incorrectly in habitat menu',
+      'Fixed habitat unlock levels not working in shop',
+      'Fixed news panel — all posts now stay visible permanently',
+    ]},
+    { date:'2026-07-18', title:'Pre-Release — Version 1.0.1', items:[
+      '2 new dragons: Obsidian Dragon (🪨🔥) and Coral Dragon (💧🌿)',
+      'Jimmie Vale is now available as a downloadable desktop app!',
+      'Auto-updates — the app updates itself when a new version is released',
+      'Frost Dragon max GPM increased to 1,300/min',
+      'Special dragons now max out at Level 20',
+      'New crop: Dragon\'s Soul — 45 min, 10,000 food (Level 18)',
+      'New 4th Farm slot unlocks at Level 18',
+      'Habitat and dragon unlock levels rebalanced',
+      'Anti-cheat: gold collect cooldown (30 seconds per habitat)',
+      'News panel now shows all posts — nothing disappears',
+    ]},
+    { date:'2026-07-14', title:'Aquatic Update — Version 1.0.0', items:[
       '5 new dragons: Water, Mud, Frost, Magma & Forest Dragon',
       'Frost Dragon is Breed Exclusive — breed Ice + Water for a 5% chance',
       'New Water Habitat with animated palm trees and a shimmering pool',
@@ -8910,7 +8989,7 @@ function openNewsPanel(){
       'New progressive unlock system — dragons appear as you level up',
       'Frost Dragon card visible in shop with Breed Exclusive badge',
     ]},
-    { date:'2026-07-11', title:'✨ Quality of Life Update', items:[
+    { date:'2026-07-11', title:'Quality of Life Update', items:[
       'Sort button in the Dragon Market — filter by element',
       'Multi-select: combine Fire + Ice to find Blue Fire Dragon',
       'Save button applies filter, resets when you close the shop',
@@ -8975,7 +9054,7 @@ function openNewsPanel(){
 
   el.innerHTML=`
     <button onclick="document.getElementById('news-panel').remove();const bd=document.getElementById('panel-backdrop');if(bd)bd.remove();" style="position:absolute;top:14px;right:16px;background:rgba(60,40,0,0.5);border:1.5px solid rgba(220,180,40,0.3);border-radius:50%;width:38px;height:38px;color:#ffd860;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">✕</button>
-    <div style="font-family:'Cinzel Decorative',serif;font-size:1.3rem;font-weight:700;color:#ffd860;text-align:center;margin-bottom:20px;flex-shrink:0;">📰 News & Updates</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.3rem;font-weight:700;color:#ffd860;text-align:center;margin-bottom:20px;flex-shrink:0;">News & Updates</div>
     <div id="news-scroll" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(220,180,40,0.3) transparent;padding-right:4px;">
       ${news.map(n=>`
         <div style="background:rgba(255,200,50,0.06);border:1px solid rgba(220,180,40,0.2);border-radius:12px;padding:14px 16px;position:relative;">
@@ -9124,9 +9203,48 @@ function resetDragonFilter(){
 
 const NEWS2_POSTS = [
   {
+    id:'savefix-2026-07-18',
+    date:'2026-07-18',
+    title:'🔧 Fix Save Game Data — Version 1.0.3',
+    body:`<div><p style="margin:0;font-size:0.9rem;line-height:1.8;opacity:0.85;">Fixed an issue where game progress was not saved between sessions in the desktop app.</p></div>`
+  },
+  {
+    id:'bugfix-2026-07-18',
+    date:'2026-07-18',
+    title:'🔧 Bug Fixes — Version 1.0.2',
+    body:`<div>
+      <ul style="margin:0;padding-left:18px;font-size:0.9rem;line-height:1.9;opacity:0.85;">
+        <li>Fixed Obsidian and Coral dragons showing incorrectly in habitat menu</li>
+        <li>Fixed habitat unlock levels not working in shop</li>
+        <li>News panel now shows all posts permanently</li>
+      </ul>
+    </div>`
+  },
+  {
+    id:'prerelease-2026-07-18',
+    date:'2026-07-18',
+    title:'🚀 Pre-Release — Version 1.0.1',
+    body:`<div>
+      <p style="margin:0 0 10px;font-size:1rem;line-height:1.6;">Jimmie Vale är nu tillgängligt som en nedladdningsbar app! Ladda ner och spela direkt på din dator.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;">
+        <div style="background:rgba(255,100,0,0.12);border:1px solid rgba(255,100,0,0.3);border-radius:10px;padding:8px 10px;font-size:0.78rem;">🖤 <b>Obsidian Dragon</b><br><span style="opacity:0.7;">Forged in volcanic glass, 65/min</span></div>
+        <div style="background:rgba(255,80,120,0.12);border:1px solid rgba(255,80,120,0.3);border-radius:10px;padding:8px 10px;font-size:0.78rem;">🌸 <b>Coral Dragon</b><br><span style="opacity:0.7;">Vibrant sea creature, 85/min</span></div>
+      </div>
+      <p style="margin:10px 0 6px;font-size:0.82rem;opacity:0.85;"><b>⚖️ Balance Changes</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:0.78rem;line-height:1.7;opacity:0.8;">
+        <li>Frost Dragon max GPM increased to 1,300/min</li>
+        <li>Special dragons now max out at Level 20</li>
+        <li>New crops and a 4th Farm slot at Level 18</li>
+        <li>Habitat and dragon unlock levels rebalanced</li>
+        <li>Anti-cheat: gold collect cooldown added</li>
+      </ul>
+      <div style="margin-top:12px;text-align:center;font-size:0.72rem;opacity:0.5;letter-spacing:1px;">～ 🐉 ～ 🐉 ～ 🐉 ～</div>
+    </div>`
+  },
+  {
     id:'aquatic-2026-07-14',
     date:'2026-07-14',
-    title:'🌊 Aquatic Update',
+    title:'🌊 Aquatic Update — Version 1.0.0',
     body:`<div style="position:relative;overflow:hidden;">
       <div style="position:absolute;inset:0;pointer-events:none;opacity:0.18;">
         <div style="position:absolute;bottom:-10px;left:0;right:0;height:60px;background:linear-gradient(180deg,transparent,rgba(80,160,255,0.8));border-radius:50% 50% 0 0/30px 30px 0 0;"></div>
@@ -9175,25 +9293,27 @@ function openNewsPanel2(){
   let el=document.getElementById('news2-panel');
   if(el){ el.remove(); return; }
 
-  const unseen=getUnseenPosts();
-  markAllNewsRead(); // mark as seen — after next refresh they'll be gone
+  const seen=getSeenNews();
+  markAllNewsRead();
 
   el=document.createElement('div');
   el.id='news2-panel';
-  el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,92vw);height:min(560px,92vw);background:linear-gradient(160deg,#020e1a,#051828);border:2px solid rgba(80,160,255,0.4);border-radius:22px;padding:44px 36px 36px;z-index:300;box-shadow:0 8px 60px rgba(0,60,180,0.6);display:flex;flex-direction:column;';
+  el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,92vw);max-height:88vh;background:linear-gradient(160deg,#020e1a,#051828);border:2px solid rgba(80,160,255,0.4);border-radius:22px;padding:44px 36px 36px;z-index:300;box-shadow:0 8px 60px rgba(0,60,180,0.6);display:flex;flex-direction:column;';
 
-  const postsHtml = unseen.length===0
-    ? '<div style="font-family:Cinzel,serif;color:rgba(120,180,255,0.7);font-size:0.95rem;text-align:center;font-style:italic;margin:auto;">No news yet — check back soon!</div>'
-    : unseen.map(p=>`
-        <div style="background:rgba(80,160,255,0.06);border:1px solid rgba(80,160,255,0.2);border-radius:16px;padding:24px;position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;">
-          <div style="position:absolute;top:14px;right:16px;font-family:Cinzel,serif;font-size:0.8rem;color:rgba(80,160,255,0.5);">${p.date}</div>
-          <div style="font-family:Cinzel,serif;font-size:1.25rem;font-weight:700;color:#7ac8ff;margin-bottom:14px;">${p.title}</div>
-          <div style="font-family:serif;font-size:1.05rem;color:rgba(150,210,255,0.85);line-height:1.6;">${p.body}</div>
-        </div>`).join('');
+  const postsHtml = NEWS2_POSTS.map(p=>{
+    const isNew = !seen.includes(p.id);
+    return `
+      <div style="background:rgba(80,160,255,0.06);border:1px solid rgba(80,160,255,${isNew?'0.5':'0.2'});border-radius:16px;padding:24px;position:relative;box-sizing:border-box;${isNew?'box-shadow:0 0 12px rgba(80,160,255,0.15);':''}">
+        ${isNew?'<div style="position:absolute;top:14px;left:16px;background:rgba(80,160,255,0.8);color:#fff;font-family:Cinzel,serif;font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:1px;">NEW</div>':''}
+        <div style="position:absolute;top:14px;right:16px;font-family:Cinzel,serif;font-size:0.8rem;color:rgba(80,160,255,0.5);">${p.date}</div>
+        <div style="font-family:Cinzel,serif;font-size:1.25rem;font-weight:700;color:#7ac8ff;margin-bottom:14px;${isNew?'margin-top:16px;':''}">${p.title}</div>
+        <div style="font-family:serif;font-size:1.05rem;color:rgba(150,210,255,0.85);line-height:1.6;">${p.body}</div>
+      </div>`;
+  }).join('');
 
   el.innerHTML=`
-    <button onclick="document.getElementById('news2-panel').remove();const bd=document.getElementById('panel-backdrop');if(bd)bd.remove();" style="position:absolute;top:14px;right:16px;background:rgba(0,30,80,0.5);border:1.5px solid rgba(80,160,255,0.3);border-radius:50%;width:38px;height:38px;color:#7ac8ff;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">✕</button>
-    <div style="font-family:'Cinzel Decorative',serif;font-size:1.9rem;font-weight:700;color:#7ac8ff;text-align:center;margin-bottom:28px;flex-shrink:0;text-shadow:0 0 16px rgba(80,160,255,0.5);">📡 News</div>
+    <button onclick="document.getElementById('news2-panel').remove();const bd=document.getElementById('panel-backdrop');if(bd)bd.remove();game.panelOpen=false;" style="position:absolute;top:14px;right:16px;background:rgba(0,30,80,0.5);border:1.5px solid rgba(80,160,255,0.3);border-radius:50%;width:38px;height:38px;color:#7ac8ff;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.9rem;font-weight:700;color:#7ac8ff;text-align:center;margin-bottom:28px;flex-shrink:0;text-shadow:0 0 16px rgba(80,160,255,0.5);">News</div>
     <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(80,160,255,0.3) transparent;">${postsHtml}</div>
   `;
   document.body.appendChild(el);
