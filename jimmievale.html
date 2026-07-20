@@ -9392,61 +9392,37 @@ const _supabase = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bHJkZnV1aHZxZ2hxZ2Nqd2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0ODcyNjIsImV4cCI6MjEwMDA2MzI2Mn0.Og4zqZ1BT4j4AGkH2puAEFojsXIkzHuz659Hq0vtWjM'
 );
 let _currentUser = null;
+let _pendingCloudData = null;
 
 async function cloudSave(){
   if(!_currentUser) return;
   try {
     const data = localStorage.getItem(SAVE_KEY);
-    await _supabase.from('saves').upsert({user_id:_currentUser.id, data, updated_at:new Date()});
+    if(!data) return;
+    const {error} = await _supabase.from('saves').upsert({user_id:_currentUser.id, data, updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error) console.warn('Cloud save error:', error);
   } catch(e){ console.warn('Cloud save failed:', e); }
 }
 
 async function cloudLoad(){
   if(!_currentUser) return null;
   try {
-    const {data,error} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).single();
-    if(error||!data) return null;
-    return data.data;
+    const {data,error} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).maybeSingle();
+    if(error){ console.warn('Cloud load error:', error); return null; }
+    return data?.data || null;
   } catch(e){ return null; }
 }
 
-async function onUserLoggedIn(user){
-  _currentUser = user;
-  const cloudData = await cloudLoad();
-  if(cloudData){
-    const localData = localStorage.getItem(SAVE_KEY);
-    const localGame = localData ? JSON.parse(localData) : null;
-    const cloudGame = JSON.parse(cloudData);
-    const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
-    const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
-    if(hasLocalProgress && hasCloudProgress){
-      // Ask which to keep
-      showMergeSaveDialog(localGame, cloudGame, cloudData);
-    } else if(hasCloudProgress){
-      // Load cloud save
-      localStorage.setItem(SAVE_KEY, cloudData);
-      loadGame();
-      showNotification('Molnsparning laddad! ☁️','success');
-    } else {
-      // Upload local to cloud
-      await cloudSave();
-      showNotification('Lokal progress uppladdad till molnet! ☁️','success');
-    }
-  } else {
-    // No cloud save, upload local
-    await cloudSave();
-    showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
-  }
-  updateKontoPanel();
-  // Auto cloud save every 30 seconds when logged in
-  if(!window._cloudSaveInterval){
-    window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
-  }
+function applyCloudSave(cloudData){
+  localStorage.setItem(SAVE_KEY, cloudData);
+  loadGame();
 }
 
 function showMergeSaveDialog(localGame, cloudGame, cloudData){
+  _pendingCloudData = cloudData;
   const el=document.createElement('div');
-  el.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+  el.id='merge-dialog';
+  el.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
   el.innerHTML=`
     <div style="background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:440px;width:90%;text-align:center;">
       <div style="font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;color:#c880ff;margin-bottom:16px;">Du har två sparningar!</div>
@@ -9463,15 +9439,46 @@ function showMergeSaveDialog(localGame, cloudGame, cloudData){
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:center;">
-        <button onclick="this.closest('div[style*=fixed]').remove();cloudSave();showNotification('Lokal progress sparad i molnet!','success');" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 18px;color:#fff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Behåll Lokal</button>
-        <button onclick="this.closest('div[style*=fixed]').remove();localStorage.setItem('${SAVE_KEY}','${cloudData.replace(/'/g,"\\'")}');loadGame();showNotification('Molnsparning laddad!','success');" style="background:rgba(100,0,180,0.3);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 18px;color:#c880ff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Ladda Moln</button>
+        <button id="merge-keep-local" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 18px;color:#fff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Behåll Lokal</button>
+        <button id="merge-load-cloud" style="background:rgba(100,0,180,0.3);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 18px;color:#c880ff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Ladda Moln</button>
       </div>
     </div>
   `;
   document.body.appendChild(el);
+  document.getElementById('merge-keep-local').onclick=()=>{
+    el.remove(); cloudSave(); showNotification('Lokal progress sparad i molnet!','success');
+  };
+  document.getElementById('merge-load-cloud').onclick=()=>{
+    el.remove(); applyCloudSave(_pendingCloudData); showNotification('Molnsparning laddad! ☁️','success');
+  };
 }
 
-_supabase.auth.getSession().then(({data})=>{ if(data.session) onUserLoggedIn(data.session.user); });
+async function onUserLoggedIn(user){
+  _currentUser = user;
+  updateKontoPanel();
+  const cloudData = await cloudLoad();
+  const localData = localStorage.getItem(SAVE_KEY);
+  const localGame = localData ? JSON.parse(localData) : null;
+  const cloudGame = cloudData ? JSON.parse(cloudData) : null;
+  const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
+  const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
+
+  if(hasCloudProgress && hasLocalProgress){
+    showMergeSaveDialog(localGame, cloudGame, cloudData);
+  } else if(hasCloudProgress){
+    applyCloudSave(cloudData);
+    showNotification('Molnsparning laddad! ☁️','success');
+  } else {
+    await cloudSave();
+    showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
+  }
+
+  if(!window._cloudSaveInterval){
+    window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
+  }
+}
+
+_supabase.auth.getSession().then(({data})=>{ if(data?.session) onUserLoggedIn(data.session.user); });
 _supabase.auth.onAuthStateChange((_,session)=>{
   if(session?.user){ onUserLoggedIn(session.user); }
   else { _currentUser=null; updateKontoPanel(); }
