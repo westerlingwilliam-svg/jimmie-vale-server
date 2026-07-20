@@ -428,6 +428,7 @@ body.placing #hud>*{pointer-events:none!important;}
 </style>
 #news-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(180,120,0,0.6);}
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="game-notif"></div>
@@ -460,6 +461,10 @@ body.placing #hud>*{pointer-events:none!important;}
   </button>
   <button id="expand-btn" onclick="openExpandPanel()" style="position:absolute;bottom:clamp(20px,2.5vw,32px);right:calc(clamp(20px,2vw,32px) + (clamp(108px,11vw,144px) + 28px)*2);">
     <span class="label">EXPAND</span>
+  </button>
+  <button id="konto-btn" onclick="openKontoPanel()" style="position:absolute;bottom:clamp(20px,2.5vw,32px);right:calc(clamp(20px,2vw,32px) + (clamp(108px,11vw,144px) + 28px)*5);background:radial-gradient(circle at 22% 18%,rgba(255,255,255,0.18) 0%,transparent 8%),linear-gradient(150deg,#1a0a3a,#0e0520 45%,#06010f);border:2px solid rgba(180,80,255,0.7);border-radius:clamp(18px,2.2vw,28px);width:clamp(108px,11vw,144px);height:clamp(108px,11vw,144px);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-sizing:border-box;pointer-events:all;box-shadow:0 4px 20px rgba(120,0,220,0.4),inset 0 1px 0 rgba(200,100,255,0.12);transition:all .2s;">
+    <span style="font-size:clamp(1.4rem,2vw,2rem);">👤</span>
+    <span style="font-family:Cinzel,serif;font-size:clamp(1.05rem,1.4vw,1.4rem);font-weight:700;color:#c880ff;letter-spacing:1px;text-shadow:0 0 12px rgba(180,80,255,0.7),0 1px 4px rgba(0,0,0,0.8);">KONTO</span>
   </button>
   <button id="news-btn" onclick="openNewsPanel()" style="position:absolute;bottom:clamp(20px,2.5vw,32px);right:calc(clamp(20px,2vw,32px) + (clamp(108px,11vw,144px) + 28px)*3);background:linear-gradient(150deg,#7a5a00,#4a3500 45%,#2a1e00);border:2px solid rgba(220,180,40,0.7);border-radius:clamp(18px,2.2vw,28px);width:clamp(108px,11vw,144px);height:clamp(108px,11vw,144px);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-sizing:border-box;pointer-events:all;">
     <span style="font-family:Cinzel,serif;font-size:clamp(1.05rem,1.4vw,1.4rem);font-weight:700;color:#ffd860;letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,0.8);">UPDATES</span>
@@ -7652,6 +7657,7 @@ function saveGame(){
       })),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    if(_currentUser) cloudSave();
   } catch(e){ console.warn('Save failed:', e); }
 }
 
@@ -9288,6 +9294,182 @@ function updateNewsBadge(){
     else btn.classList.remove('news-unread');
   }
 }
+
+function openKontoPanel(){
+  let el=document.getElementById('konto-panel');
+  if(el){ el.remove(); const bd=document.getElementById('panel-backdrop'); if(bd) bd.remove(); game.panelOpen=false; return; }
+  showPanelBackdrop(); game.panelOpen=true;
+  el=document.createElement('div');
+  el.id='konto-panel';
+  el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(480px,92vw);background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.4);border-radius:22px;padding:44px 36px 36px;z-index:300;box-shadow:0 8px 60px rgba(100,0,200,0.5);';
+  el.innerHTML=`
+    <button onclick="document.getElementById('konto-panel').remove();const bd=document.getElementById('panel-backdrop');if(bd)bd.remove();game.panelOpen=false;" style="position:absolute;top:14px;right:16px;background:rgba(60,0,100,0.5);border:1.5px solid rgba(180,80,255,0.3);border-radius:50%;width:38px;height:38px;color:#c880ff;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:1.6rem;font-weight:700;color:#c880ff;text-align:center;margin-bottom:8px;text-shadow:0 0 16px rgba(180,80,255,0.5);">👤 Konto</div>
+    <div id="konto-content" style="margin-top:20px;text-align:center;">
+      <div style="font-family:Cinzel,serif;font-size:0.9rem;color:rgba(200,150,255,0.7);margin-bottom:24px;font-style:italic;">Logga in för att spara din progress i molnet</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <input id="konto-email" type="email" placeholder="Email" style="background:rgba(100,0,180,0.15);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:12px 16px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+        <input id="konto-password" type="password" placeholder="Lösenord" style="background:rgba(100,0,180,0.15);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:12px 16px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+        <button onclick="loginWithEmail()" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:13px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;font-weight:700;cursor:pointer;letter-spacing:1px;">Logga in</button>
+        <button onclick="registerWithEmail()" style="background:rgba(100,0,180,0.2);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:13px;color:#c880ff;font-family:Cinzel,serif;font-size:0.9rem;cursor:pointer;">Skapa konto</button>
+        <div style="color:rgba(200,150,255,0.4);font-size:0.75rem;font-family:Cinzel,serif;">— eller —</div>
+        <button onclick="loginWithGoogle()" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;padding:13px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;"><span style="font-size:1.2rem;">G</span> Logga in med Google</button>
+      </div>
+      <div id="konto-msg" style="margin-top:14px;font-family:Cinzel,serif;font-size:0.8rem;color:#ff8080;min-height:20px;"></div>
+    </div>
+  `;
+  document.body.appendChild(el);
+}
+
+function loginWithEmail(){
+  const email=document.getElementById('konto-email').value;
+  const password=document.getElementById('konto-password').value;
+  if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
+  document.getElementById('konto-msg').style.color='#c880ff';
+  document.getElementById('konto-msg').textContent='Loggar in...';
+  _supabase.auth.signInWithPassword({email,password}).then(({data,error})=>{
+    if(error){ document.getElementById('konto-msg').style.color='#ff8080'; document.getElementById('konto-msg').textContent=error.message; return; }
+    _currentUser=data.user;
+    updateKontoPanel();
+    showNotification('Inloggad! 🐉','success');
+  });
+}
+function registerWithEmail(){
+  const email=document.getElementById('konto-email').value;
+  const password=document.getElementById('konto-password').value;
+  if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
+  document.getElementById('konto-msg').style.color='#c880ff';
+  document.getElementById('konto-msg').textContent='Skapar konto...';
+  _supabase.auth.signUp({email,password}).then(({data,error})=>{
+    if(error){ document.getElementById('konto-msg').style.color='#ff8080'; document.getElementById('konto-msg').textContent=error.message; return; }
+    document.getElementById('konto-msg').style.color='#80ff80';
+    document.getElementById('konto-msg').textContent='Konto skapat! Kolla din email för bekräftelse.';
+  });
+}
+function loginWithGoogle(){
+  document.getElementById('konto-msg').style.color='#c880ff';
+  document.getElementById('konto-msg').textContent='Öppnar Google...';
+  _supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
+}
+function logoutKonto(){
+  _supabase.auth.signOut().then(()=>{ _currentUser=null; updateKontoPanel(); showNotification('Utloggad!','success'); });
+}
+
+function updateKontoPanel(){
+  const content=document.getElementById('konto-content');
+  if(!content) return;
+  if(_currentUser){
+    content.innerHTML=`
+      <div style="font-family:Cinzel,serif;font-size:0.9rem;color:rgba(200,150,255,0.8);margin-bottom:16px;">Inloggad som:</div>
+      <div style="font-family:Cinzel,serif;font-size:1rem;color:#c880ff;font-weight:700;margin-bottom:24px;">${_currentUser.email}</div>
+      <button onclick="logoutKonto()" style="background:rgba(180,0,60,0.3);border:1.5px solid rgba(255,80,120,0.4);border-radius:12px;padding:13px 28px;color:#ff8080;font-family:Cinzel,serif;font-size:0.9rem;cursor:pointer;">Logga ut</button>
+    `;
+  } else {
+    content.innerHTML=`
+      <div style="font-family:Cinzel,serif;font-size:0.9rem;color:rgba(200,150,255,0.7);margin-bottom:24px;font-style:italic;">Logga in för att spara din progress i molnet</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <input id="konto-email" type="email" placeholder="Email" style="background:rgba(100,0,180,0.15);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:12px 16px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+        <input id="konto-password" type="password" placeholder="Lösenord" style="background:rgba(100,0,180,0.15);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:12px 16px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+        <button onclick="loginWithEmail()" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:13px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;font-weight:700;cursor:pointer;letter-spacing:1px;">Logga in</button>
+        <button onclick="registerWithEmail()" style="background:rgba(100,0,180,0.2);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:13px;color:#c880ff;font-family:Cinzel,serif;font-size:0.9rem;cursor:pointer;">Skapa konto</button>
+        <div style="color:rgba(200,150,255,0.4);font-size:0.75rem;font-family:Cinzel,serif;">— eller —</div>
+        <button onclick="loginWithGoogle()" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;padding:13px;color:#fff;font-family:Cinzel,serif;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;"><span style="font-size:1.2rem;">G</span> Logga in med Google</button>
+      </div>
+      <div id="konto-msg" style="margin-top:14px;font-family:Cinzel,serif;font-size:0.8rem;color:#ff8080;min-height:20px;"></div>
+    `;
+  }
+}
+
+// Init Supabase
+const _supabase = supabase.createClient(
+  'https://tylrdfuuhvqghqgcjwhx.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bHJkZnV1aHZxZ2hxZ2Nqd2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0ODcyNjIsImV4cCI6MjEwMDA2MzI2Mn0.Og4zqZ1BT4j4AGkH2puAEFojsXIkzHuz659Hq0vtWjM'
+);
+let _currentUser = null;
+
+async function cloudSave(){
+  if(!_currentUser) return;
+  try {
+    const data = localStorage.getItem(SAVE_KEY);
+    await _supabase.from('saves').upsert({user_id:_currentUser.id, data, updated_at:new Date()});
+  } catch(e){ console.warn('Cloud save failed:', e); }
+}
+
+async function cloudLoad(){
+  if(!_currentUser) return null;
+  try {
+    const {data,error} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).single();
+    if(error||!data) return null;
+    return data.data;
+  } catch(e){ return null; }
+}
+
+async function onUserLoggedIn(user){
+  _currentUser = user;
+  const cloudData = await cloudLoad();
+  if(cloudData){
+    const localData = localStorage.getItem(SAVE_KEY);
+    const localGame = localData ? JSON.parse(localData) : null;
+    const cloudGame = JSON.parse(cloudData);
+    const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
+    const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
+    if(hasLocalProgress && hasCloudProgress){
+      // Ask which to keep
+      showMergeSaveDialog(localGame, cloudGame, cloudData);
+    } else if(hasCloudProgress){
+      // Load cloud save
+      localStorage.setItem(SAVE_KEY, cloudData);
+      loadGame();
+      showNotification('Molnsparning laddad! ☁️','success');
+    } else {
+      // Upload local to cloud
+      await cloudSave();
+      showNotification('Lokal progress uppladdad till molnet! ☁️','success');
+    }
+  } else {
+    // No cloud save, upload local
+    await cloudSave();
+    showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
+  }
+  updateKontoPanel();
+  // Auto cloud save every 30 seconds when logged in
+  if(!window._cloudSaveInterval){
+    window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
+  }
+}
+
+function showMergeSaveDialog(localGame, cloudGame, cloudData){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+  el.innerHTML=`
+    <div style="background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:440px;width:90%;text-align:center;">
+      <div style="font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;color:#c880ff;margin-bottom:16px;">Du har två sparningar!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+        <div style="background:rgba(100,0,180,0.2);border:1px solid rgba(180,80,255,0.3);border-radius:12px;padding:14px;">
+          <div style="font-family:Cinzel,serif;font-size:0.8rem;color:#c880ff;margin-bottom:8px;">📱 Lokal</div>
+          <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#fff;">Level ${localGame.level||1}</div>
+          <div style="font-family:Cinzel,serif;font-size:0.75rem;color:rgba(255,255,255,0.6);">${(localGame.placedHabitats||[]).length} habitat</div>
+        </div>
+        <div style="background:rgba(100,0,180,0.2);border:1px solid rgba(180,80,255,0.3);border-radius:12px;padding:14px;">
+          <div style="font-family:Cinzel,serif;font-size:0.8rem;color:#c880ff;margin-bottom:8px;">☁️ Moln</div>
+          <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#fff;">Level ${cloudGame.level||1}</div>
+          <div style="font-family:Cinzel,serif;font-size:0.75rem;color:rgba(255,255,255,0.6);">${(cloudGame.placedHabitats||[]).length} habitat</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="this.closest('div[style*=fixed]').remove();cloudSave();showNotification('Lokal progress sparad i molnet!','success');" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 18px;color:#fff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Behåll Lokal</button>
+        <button onclick="this.closest('div[style*=fixed]').remove();localStorage.setItem('${SAVE_KEY}','${cloudData.replace(/'/g,"\\'")}');loadGame();showNotification('Molnsparning laddad!','success');" style="background:rgba(100,0,180,0.3);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 18px;color:#c880ff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Ladda Moln</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+}
+
+_supabase.auth.getSession().then(({data})=>{ if(data.session) onUserLoggedIn(data.session.user); });
+_supabase.auth.onAuthStateChange((_,session)=>{
+  if(session?.user){ onUserLoggedIn(session.user); }
+  else { _currentUser=null; updateKontoPanel(); }
+});
 
 function openNewsPanel2(){
   let el=document.getElementById('news2-panel');
