@@ -9331,10 +9331,9 @@ function loginWithEmail(){
   const email=document.getElementById('konto-email').value;
   const password=document.getElementById('konto-password').value;
   if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
-  document.getElementById('konto-msg').style.color='#c880ff';
-  document.getElementById('konto-msg').textContent='Loggar in...';
+  const _ml=document.getElementById('konto-msg'); if(_ml){_ml.style.color='#c880ff';_ml.textContent='Loggar in...';}
   _supabase.auth.signInWithPassword({email,password}).then(({data,error})=>{
-    if(error){ document.getElementById('konto-msg').style.color='#ff8080'; document.getElementById('konto-msg').textContent=error.message; return; }
+    if(error){ const _m=document.getElementById('konto-msg'); if(_m){_m.style.color='#ff8080';_m.textContent=error.message;} return; }
     _currentUser=data.user;
     updateKontoPanel();
     showNotification('Inloggad! 🐉','success');
@@ -9344,22 +9343,18 @@ function registerWithEmail(){
   const email=document.getElementById('konto-email').value;
   const password=document.getElementById('konto-password').value;
   if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
-  document.getElementById('konto-msg').style.color='#c880ff';
-  document.getElementById('konto-msg').textContent='Skapar konto...';
+  const _mr=document.getElementById('konto-msg'); if(_mr){_mr.style.color='#c880ff';_mr.textContent='Skapar konto...';}
   _supabase.auth.signUp({email,password}).then(({data,error})=>{
-    if(error){ document.getElementById('konto-msg').style.color='#ff8080'; document.getElementById('konto-msg').textContent=error.message; return; }
+    if(error){ const _m=document.getElementById('konto-msg'); if(_m){_m.style.color='#ff8080';_m.textContent=error.message;} return; }
     if(data.user && data.user.identities && data.user.identities.length===0){
-      document.getElementById('konto-msg').style.color='#ff8080';
-      document.getElementById('konto-msg').textContent='Det finns redan ett konto med den emailen. Logga in istället!';
+      const _m2=document.getElementById('konto-msg'); if(_m2){_m2.style.color='#ff8080';_m2.textContent='Det finns redan ett konto med den emailen. Logga in istället!';}
       return;
     }
-    document.getElementById('konto-msg').style.color='#80ff80';
-    document.getElementById('konto-msg').textContent='Konto skapat!';
+    const _m3=document.getElementById('konto-msg'); if(_m3){_m3.style.color='#80ff80';_m3.textContent='Konto skapat!';}
   });
 }
 function loginWithGoogle(){
-  document.getElementById('konto-msg').style.color='#c880ff';
-  document.getElementById('konto-msg').textContent='Öppnar Google...';
+  const _mg=document.getElementById('konto-msg'); if(_mg){_mg.style.color='#c880ff';_mg.textContent='Öppnar Google...';}
   _supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
 }
 function logoutKonto(){
