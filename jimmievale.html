@@ -9422,7 +9422,7 @@ function showMergeSaveDialog(localGame, cloudGame, cloudData){
   _pendingCloudData = cloudData;
   const el=document.createElement('div');
   el.id='merge-dialog';
-  el.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);pointer-events:all;';
+  el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);pointer-events:all;';
   el.innerHTML=`
     <div style="background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:440px;width:90%;text-align:center;">
       <div style="font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;color:#c880ff;margin-bottom:16px;">Du har två sparningar!</div>
@@ -9454,6 +9454,7 @@ function showMergeSaveDialog(localGame, cloudGame, cloudData){
 }
 
 async function onUserLoggedIn(user){
+  const isNewUser = !_currentUser || _currentUser.id !== user.id;
   _currentUser = user;
   updateKontoPanel();
   const cloudData = await cloudLoad();
@@ -9463,7 +9464,7 @@ async function onUserLoggedIn(user){
   const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
   const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
 
-  if(hasCloudProgress && hasLocalProgress){
+  if(hasCloudProgress && hasLocalProgress && isNewUser){
     showMergeSaveDialog(localGame, cloudGame, cloudData);
   } else if(hasCloudProgress){
     applyCloudSave(cloudData);
