@@ -9398,8 +9398,9 @@ const _supabase = supabase.createClient(
 let _currentUser = null;
 let _pendingCloudData = null;
 
+let _cloudReady = false;
 async function cloudSave(){
-  if(!_currentUser) return;
+  if(!_currentUser || !_cloudReady) return;
   try {
     const data = localStorage.getItem(SAVE_KEY);
     if(!data) return;
@@ -9419,6 +9420,7 @@ async function cloudLoad(){
 
 function applyCloudSave(cloudData){
   localStorage.setItem(SAVE_KEY, cloudData);
+  sessionStorage.setItem('_cloudJustLoaded', '1');
   location.reload();
 }
 
@@ -9460,6 +9462,16 @@ function showMergeSaveDialog(localGame, cloudGame, cloudData){
 async function onUserLoggedIn(user){
   _currentUser = user;
   updateKontoPanel();
+
+  // Skip cloud load if we just reloaded from a cloud save
+  if(sessionStorage.getItem('_cloudJustLoaded')){
+    sessionStorage.removeItem('_cloudJustLoaded');
+    _cloudReady = true;
+    if(!window._cloudSaveInterval){
+      window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
+    }
+    return;
+  }
   const cloudData = await cloudLoad();
   const cloudGame = cloudData ? JSON.parse(cloudData) : null;
   const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
@@ -9506,6 +9518,7 @@ async function onUserLoggedIn(user){
     }
   }
 
+  _cloudReady = true;
   if(!window._cloudSaveInterval){
     window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
   }
