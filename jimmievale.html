@@ -9348,8 +9348,13 @@ function registerWithEmail(){
   document.getElementById('konto-msg').textContent='Skapar konto...';
   _supabase.auth.signUp({email,password}).then(({data,error})=>{
     if(error){ document.getElementById('konto-msg').style.color='#ff8080'; document.getElementById('konto-msg').textContent=error.message; return; }
+    if(data.user && data.user.identities && data.user.identities.length===0){
+      document.getElementById('konto-msg').style.color='#ff8080';
+      document.getElementById('konto-msg').textContent='Det finns redan ett konto med den emailen. Logga in istället!';
+      return;
+    }
     document.getElementById('konto-msg').style.color='#80ff80';
-    document.getElementById('konto-msg').textContent='Konto skapat! Kolla din email för bekräftelse.';
+    document.getElementById('konto-msg').textContent='Konto skapat!';
   });
 }
 function loginWithGoogle(){
@@ -9420,7 +9425,7 @@ async function cloudLoad(){
 
 function applyCloudSave(cloudData){
   localStorage.setItem(SAVE_KEY, cloudData);
-  sessionStorage.setItem('_cloudJustLoaded', '1');
+  localStorage.setItem('_cloudJustLoaded', '1');
   location.reload();
 }
 
@@ -9464,8 +9469,8 @@ async function onUserLoggedIn(user){
   updateKontoPanel();
 
   // Skip cloud load if we just reloaded from a cloud save
-  if(sessionStorage.getItem('_cloudJustLoaded')){
-    sessionStorage.removeItem('_cloudJustLoaded');
+  if(localStorage.getItem('_cloudJustLoaded')){
+    localStorage.removeItem('_cloudJustLoaded');
     _cloudReady = true;
     if(!window._cloudSaveInterval){
       window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
@@ -9477,8 +9482,9 @@ async function onUserLoggedIn(user){
   const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
 
   if(hasCloudProgress){
+    console.log('Loading cloud save, level:', cloudGame.level);
     applyCloudSave(cloudData);
-    showNotification('Molnsparning laddad! ☁️','success');
+    return;
   } else {
     const localData = localStorage.getItem(SAVE_KEY);
     const localGame = localData ? JSON.parse(localData) : null;
