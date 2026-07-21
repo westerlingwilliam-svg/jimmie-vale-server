@@ -9365,7 +9365,9 @@ function loginWithGoogle(){
 function logoutKonto(){
   _supabase.auth.signOut().then(()=>{
     _currentUser=null;
+    _cloudLoaded=false;
     localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem('_justLoadedCloud');
     location.reload();
   });
 }
@@ -9400,148 +9402,73 @@ const _supabase = supabase.createClient(
   'https://tylrdfuuhvqghqgcjwhx.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bHJkZnV1aHZxZ2hxZ2Nqd2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0ODcyNjIsImV4cCI6MjEwMDA2MzI2Mn0.Og4zqZ1BT4j4AGkH2puAEFojsXIkzHuz659Hq0vtWjM'
 );
+// ══════════════════════════════════════════════════════
+// CLOUD SAVE SYSTEM
+// ══════════════════════════════════════════════════════
 let _currentUser = null;
-let _pendingCloudData = null;
+let _cloudLoaded = false;
 
-let _cloudReady = false;
 async function cloudSave(){
-  if(!_currentUser || !_cloudReady) return;
+  if(!_currentUser || !_cloudLoaded) return;
   try {
     const data = localStorage.getItem(SAVE_KEY);
     if(!data) return;
-    const {error} = await _supabase.from('saves').upsert({user_id:_currentUser.id, data, updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    if(error) console.warn('Cloud save error:', error);
-  } catch(e){ console.warn('Cloud save failed:', e); }
+    await _supabase.from('saves').upsert(
+      {user_id:_currentUser.id, data, updated_at:new Date().toISOString()},
+      {onConflict:'user_id'}
+    );
+  } catch(e){}
 }
 
 async function cloudLoad(){
   if(!_currentUser) return null;
   try {
-    const {data,error} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).maybeSingle();
-    if(error){ console.warn('Cloud load error:', error); return null; }
+    const {data} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).maybeSingle();
     return data?.data || null;
   } catch(e){ return null; }
 }
 
-function applyCloudSave(cloudData){
-  localStorage.setItem(SAVE_KEY, cloudData);
-  localStorage.setItem('_cloudJustLoaded', '1');
-  location.reload();
-}
-
-function showMergeSaveDialog(localGame, cloudGame, cloudData){
-  _pendingCloudData = cloudData;
-  const el=document.createElement('div');
-  el.id='merge-dialog';
-  el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);pointer-events:all;';
-  el.innerHTML=`
-    <div style="background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:440px;width:90%;text-align:center;">
-      <div style="font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;color:#c880ff;margin-bottom:16px;">Du har två sparningar!</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
-        <div style="background:rgba(100,0,180,0.2);border:1px solid rgba(180,80,255,0.3);border-radius:12px;padding:14px;">
-          <div style="font-family:Cinzel,serif;font-size:0.8rem;color:#c880ff;margin-bottom:8px;">📱 Lokal</div>
-          <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#fff;">Level ${localGame.level||1}</div>
-          <div style="font-family:Cinzel,serif;font-size:0.75rem;color:rgba(255,255,255,0.6);">${(localGame.placedHabitats||[]).length} habitat</div>
-        </div>
-        <div style="background:rgba(100,0,180,0.2);border:1px solid rgba(180,80,255,0.3);border-radius:12px;padding:14px;">
-          <div style="font-family:Cinzel,serif;font-size:0.8rem;color:#c880ff;margin-bottom:8px;">☁️ Moln</div>
-          <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#fff;">Level ${cloudGame.level||1}</div>
-          <div style="font-family:Cinzel,serif;font-size:0.75rem;color:rgba(255,255,255,0.6);">${(cloudGame.placedHabitats||[]).length} habitat</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <button id="merge-keep-local" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 18px;color:#fff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Behåll Lokal</button>
-        <button id="merge-load-cloud" style="background:rgba(100,0,180,0.3);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 18px;color:#c880ff;font-family:Cinzel,serif;font-size:0.8rem;cursor:pointer;">Ladda Moln</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(el);
-  document.getElementById('merge-keep-local').onclick=()=>{
-    el.remove(); cloudSave(); showNotification('Lokal progress sparad i molnet!','success');
-  };
-  document.getElementById('merge-load-cloud').onclick=()=>{
-    el.remove(); applyCloudSave(_pendingCloudData); showNotification('Molnsparning laddad! ☁️','success');
-  };
-}
-
-async function onUserLoggedIn(user){
+async function handleLogin(user){
+  if(_cloudLoaded) return; // already handled
   _currentUser = user;
+  _cloudLoaded = false;
   updateKontoPanel();
 
-  // Skip cloud load if we just reloaded from a cloud save
-  if(localStorage.getItem('_cloudJustLoaded')){
-    localStorage.removeItem('_cloudJustLoaded');
-    _cloudReady = true;
-    if(!window._cloudSaveInterval){
-      window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
-    }
+  // Was this a reload after cloud load? Skip re-loading
+  if(localStorage.getItem('_justLoadedCloud')==='1'){
+    localStorage.removeItem('_justLoadedCloud');
+    _cloudLoaded = true;
+    if(!window._cloudInterval) window._cloudInterval = setInterval(cloudSave, 30000);
+    showNotification('Molnsparning laddad! ☁️','success');
     return;
   }
-  const cloudData = await cloudLoad();
-  const cloudGame = cloudData ? JSON.parse(cloudData) : null;
-  const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
 
-  if(hasCloudProgress){
-    console.log('Loading cloud save, level:', cloudGame.level);
-    applyCloudSave(cloudData);
-    return;
-  } else {
-    const localData = localStorage.getItem(SAVE_KEY);
-    const localGame = localData ? JSON.parse(localData) : null;
-    const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
-    if(hasLocalProgress){
-      // Remove any existing dialog first
-      const existing = document.getElementById('merge-dialog');
-      if(existing) existing.remove();
-      const el=document.createElement('div');
-      el.id='merge-dialog';
-      el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);pointer-events:all;';
-      const box=document.createElement('div');
-      box.style.cssText='background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:400px;width:90%;text-align:center;pointer-events:all;';
-      const title=document.createElement('div');
-      title.style.cssText='font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:#c880ff;margin-bottom:12px;';
-      title.textContent='Inget molnspar hittades';
-      const desc=document.createElement('div');
-      desc.style.cssText='font-family:Cinzel,serif;font-size:0.85rem;color:rgba(200,150,255,0.7);margin-bottom:24px;';
-      desc.textContent='Vill du ladda upp din lokala progress till ditt konto?';
-      const btnRow=document.createElement('div');
-      btnRow.style.cssText='display:flex;gap:10px;justify-content:center;pointer-events:all;';
-      const yesBtn=document.createElement('button');
-      yesBtn.textContent='Ja, ladda upp';
-      yesBtn.style.cssText='background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 22px;color:#fff;font-family:Cinzel,serif;font-size:0.85rem;cursor:pointer;pointer-events:all;';
-      yesBtn.addEventListener('click',()=>{ el.remove(); cloudSave(); showNotification('Progress uppladdad! ☁️','success'); });
-      const noBtn=document.createElement('button');
-      noBtn.textContent='Nej tack';
-      noBtn.style.cssText='background:rgba(100,0,180,0.2);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 22px;color:#c880ff;font-family:Cinzel,serif;font-size:0.85rem;cursor:pointer;pointer-events:all;';
-      noBtn.addEventListener('click',()=>{ el.remove(); showNotification('Inloggad! ☁️','success'); });
-      btnRow.appendChild(yesBtn); btnRow.appendChild(noBtn);
-      box.appendChild(title); box.appendChild(desc); box.appendChild(btnRow);
-      el.appendChild(box);
-      document.body.appendChild(el);
-    } else {
-      await cloudSave();
-      showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
-    }
+  const raw = await cloudLoad();
+  if(raw){
+    try {
+      const parsed = JSON.parse(raw);
+      const hasProgress = parsed.level > 1 || (parsed.placedHabitats||[]).length > 0;
+      if(hasProgress){
+        localStorage.setItem(SAVE_KEY, raw);
+        localStorage.setItem('_justLoadedCloud','1');
+        location.reload();
+        return;
+      }
+    } catch(e){}
   }
 
-  _cloudReady = true;
-  if(!window._cloudSaveInterval){
-    window._cloudSaveInterval = setInterval(()=>{ if(_currentUser) cloudSave(); }, 30000);
-  }
+  // No cloud save or empty — upload local
+  _cloudLoaded = true;
+  await cloudSave();
+  if(!window._cloudInterval) window._cloudInterval = setInterval(cloudSave, 30000);
+  showNotification('Inloggad! ☁️','success');
 }
 
-let _loginHandled = false;
 
-_supabase.auth.getSession().then(({data})=>{
-  if(data?.session && !_loginHandled){ _loginHandled=true; onUserLoggedIn(data.session.user); }
-});
+_supabase.auth.getSession().then(({data})=>{ if(data?.session) handleLogin(data.session.user); });
 _supabase.auth.onAuthStateChange((_,session)=>{
-  if(session?.user){
-    if(!_loginHandled){ _loginHandled=true; onUserLoggedIn(session.user); }
-    else { _currentUser=session.user; updateKontoPanel(); }
-  } else {
-    _loginHandled=false; _currentUser=null; updateKontoPanel();
-  }
+  if(session?.user){ handleLogin(session.user); }
+  else { _currentUser=null; _cloudLoaded=false; updateKontoPanel(); }
 });
 
 function openNewsPanel2(){
