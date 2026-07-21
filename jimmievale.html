@@ -9358,7 +9358,11 @@ function loginWithGoogle(){
   _supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
 }
 function logoutKonto(){
-  _supabase.auth.signOut().then(()=>{ _currentUser=null; updateKontoPanel(); showNotification('Utloggad!','success'); });
+  _supabase.auth.signOut().then(()=>{
+    _currentUser=null;
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  });
 }
 
 function updateKontoPanel(){
@@ -9454,24 +9458,38 @@ function showMergeSaveDialog(localGame, cloudGame, cloudData){
 }
 
 async function onUserLoggedIn(user){
-  const isNewUser = !_currentUser || _currentUser.id !== user.id;
   _currentUser = user;
   updateKontoPanel();
   const cloudData = await cloudLoad();
-  const localData = localStorage.getItem(SAVE_KEY);
-  const localGame = localData ? JSON.parse(localData) : null;
   const cloudGame = cloudData ? JSON.parse(cloudData) : null;
-  const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
   const hasCloudProgress = cloudGame && (cloudGame.level>1 || (cloudGame.placedHabitats||[]).length>0);
 
-  if(hasCloudProgress && hasLocalProgress && isNewUser){
-    showMergeSaveDialog(localGame, cloudGame, cloudData);
-  } else if(hasCloudProgress){
+  if(hasCloudProgress){
     applyCloudSave(cloudData);
     showNotification('Molnsparning laddad! ☁️','success');
   } else {
-    await cloudSave();
-    showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
+    const localData = localStorage.getItem(SAVE_KEY);
+    const localGame = localData ? JSON.parse(localData) : null;
+    const hasLocalProgress = localGame && (localGame.level>1 || (localGame.placedHabitats||[]).length>0);
+    if(hasLocalProgress){
+      const el=document.createElement('div');
+      el.id='merge-dialog';
+      el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);pointer-events:all;';
+      el.innerHTML=`<div style="background:linear-gradient(160deg,#0e021a,#180530);border:2px solid rgba(180,80,255,0.5);border-radius:22px;padding:36px;max-width:400px;width:90%;text-align:center;pointer-events:all;">
+        <div style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:#c880ff;margin-bottom:12px;">Inget molnspar hittades</div>
+        <div style="font-family:Cinzel,serif;font-size:0.85rem;color:rgba(200,150,255,0.7);margin-bottom:24px;">Vill du ladda upp din lokala progress till ditt konto?</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="upload-yes" style="background:linear-gradient(135deg,#7700cc,#4400aa);border:1.5px solid rgba(180,80,255,0.5);border-radius:12px;padding:11px 22px;color:#fff;font-family:Cinzel,serif;font-size:0.85rem;cursor:pointer;pointer-events:all;">Ja, ladda upp</button>
+          <button id="upload-no" style="background:rgba(100,0,180,0.2);border:1.5px solid rgba(180,80,255,0.3);border-radius:12px;padding:11px 22px;color:#c880ff;font-family:Cinzel,serif;font-size:0.85rem;cursor:pointer;pointer-events:all;">Nej tack</button>
+        </div>
+      </div>`;
+      document.body.appendChild(el);
+      document.getElementById('upload-yes').onclick=()=>{ el.remove(); cloudSave(); showNotification('Progress uppladdad! ☁️','success'); };
+      document.getElementById('upload-no').onclick=()=>{ el.remove(); showNotification('Inloggad! ☁️','success'); };
+    } else {
+      await cloudSave();
+      showNotification('Inloggad! Progress sparas nu i molnet. ☁️','success');
+    }
   }
 
   if(!window._cloudSaveInterval){
