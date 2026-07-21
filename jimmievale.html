@@ -9419,7 +9419,7 @@ async function cloudLoad(){
 
 function applyCloudSave(cloudData){
   localStorage.setItem(SAVE_KEY, cloudData);
-  loadGame();
+  location.reload();
 }
 
 function showMergeSaveDialog(localGame, cloudGame, cloudData){
