@@ -9332,11 +9332,14 @@ function loginWithEmail(){
   const password=document.getElementById('konto-password').value;
   if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
   const _ml=document.getElementById('konto-msg'); if(_ml){_ml.style.color='#c880ff';_ml.textContent='Loggar in...';}
-  _supabase.auth.signInWithPassword({email,password}).then(({data,error})=>{
-    if(error){ const _m=document.getElementById('konto-msg'); if(_m){_m.style.color='#ff8080';_m.textContent=error.message;} return; }
-    _currentUser=data.user;
-    updateKontoPanel();
-    showNotification('Inloggad! 🐉','success');
+  fetch('https://jimmie-vale-server-production.up.railway.app/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})})
+  .then(r=>r.json()).then(data=>{
+    const _m=document.getElementById('konto-msg');
+    if(data.error){ if(_m){_m.style.color='#ff8080';_m.textContent=data.error;} return; }
+    _currentUser=data.user; _currentUser._token=data.session?.access_token;
+    localStorage.setItem('_savedUser', JSON.stringify(_currentUser));
+    _cloudLoaded=false;
+    handleLogin(_currentUser);
   });
 }
 function registerWithEmail(){
@@ -9344,13 +9347,11 @@ function registerWithEmail(){
   const password=document.getElementById('konto-password').value;
   if(!email||!password){ document.getElementById('konto-msg').textContent='Fyll i email och lösenord!'; return; }
   const _mr=document.getElementById('konto-msg'); if(_mr){_mr.style.color='#c880ff';_mr.textContent='Skapar konto...';}
-  _supabase.auth.signUp({email,password}).then(({data,error})=>{
-    if(error){ const _m=document.getElementById('konto-msg'); if(_m){_m.style.color='#ff8080';_m.textContent=error.message;} return; }
-    if(data.user && data.user.identities && data.user.identities.length===0){
-      const _m2=document.getElementById('konto-msg'); if(_m2){_m2.style.color='#ff8080';_m2.textContent='Det finns redan ett konto med den emailen. Logga in istället!';}
-      return;
-    }
-    const _m3=document.getElementById('konto-msg'); if(_m3){_m3.style.color='#80ff80';_m3.textContent='Konto skapat!';}
+  fetch('https://jimmie-vale-server-production.up.railway.app/auth/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})})
+  .then(r=>r.json()).then(data=>{
+    const _m=document.getElementById('konto-msg');
+    if(data.error){ if(_m){_m.style.color='#ff8080';_m.textContent=data.error;} return; }
+    if(_m){_m.style.color='#80ff80';_m.textContent='Konto skapat! Logga in nu.';}
   });
 }
 function loginWithGoogle(){
@@ -9358,13 +9359,12 @@ function loginWithGoogle(){
   _supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
 }
 function logoutKonto(){
-  _supabase.auth.signOut().then(()=>{
-    _currentUser=null;
-    _cloudLoaded=false;
-    localStorage.removeItem(SAVE_KEY);
-    localStorage.removeItem('_justLoadedCloud');
-    location.reload();
-  });
+  _currentUser=null;
+  _cloudLoaded=false;
+  localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem('_justLoadedCloud');
+  localStorage.removeItem('_savedUser');
+  location.reload();
 }
 
 function updateKontoPanel(){
@@ -9393,10 +9393,7 @@ function updateKontoPanel(){
 }
 
 // Init Supabase
-const _supabase = supabase.createClient(
-  'https://tylrdfuuhvqghqgcjwhx.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bHJkZnV1aHZxZ2hxZ2Nqd2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0ODcyNjIsImV4cCI6MjEwMDA2MzI2Mn0.Og4zqZ1BT4j4AGkH2puAEFojsXIkzHuz659Hq0vtWjM'
-);
+// Auth now handled via Railway server
 // ══════════════════════════════════════════════════════
 // CLOUD SAVE SYSTEM
 // ══════════════════════════════════════════════════════
@@ -9408,18 +9405,20 @@ async function cloudSave(){
   try {
     const data = localStorage.getItem(SAVE_KEY);
     if(!data) return;
-    await _supabase.from('saves').upsert(
-      {user_id:_currentUser.id, data, updated_at:new Date().toISOString()},
-      {onConflict:'user_id'}
-    );
+    await fetch('https://jimmie-vale-server-production.up.railway.app/save', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:_currentUser.id, data})
+    });
   } catch(e){}
 }
 
 async function cloudLoad(){
   if(!_currentUser) return null;
   try {
-    const {data} = await _supabase.from('saves').select('data').eq('user_id',_currentUser.id).maybeSingle();
-    return data?.data || null;
+    const res = await fetch('https://jimmie-vale-server-production.up.railway.app/load/' + _currentUser.id);
+    const json = await res.json();
+    return json.data || null;
   } catch(e){ return null; }
 }
 
@@ -9460,11 +9459,9 @@ async function handleLogin(user){
 }
 
 
-_supabase.auth.getSession().then(({data})=>{ if(data?.session) handleLogin(data.session.user); });
-_supabase.auth.onAuthStateChange((_,session)=>{
-  if(session?.user){ handleLogin(session.user); }
-  else { _currentUser=null; _cloudLoaded=false; updateKontoPanel(); }
-});
+// Check if user was logged in (stored in localStorage)
+const _savedUser = localStorage.getItem('_savedUser');
+if(_savedUser){ try{ _currentUser=JSON.parse(_savedUser); handleLogin(_currentUser); }catch(e){} }
 
 function openNewsPanel2(){
   let el=document.getElementById('news2-panel');
