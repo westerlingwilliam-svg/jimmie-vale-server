@@ -14,9 +14,16 @@ const supabase = createClient(
 
 app.post('/auth/register', async (req, res) => {
   const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true
+  });
   if(error) return res.status(400).json({ error: error.message });
-  res.json({ user: data.user, session: data.session });
+  // Auto-login after register
+  const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  if(loginError) return res.status(400).json({ error: loginError.message });
+  res.json({ user: loginData.user, session: loginData.session });
 });
 
 app.post('/auth/login', async (req, res) => {
