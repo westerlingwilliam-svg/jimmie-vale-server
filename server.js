@@ -9,7 +9,13 @@ app.use(express.static('.'));
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 app.post('/auth/register', async (req, res) => {
@@ -20,7 +26,6 @@ app.post('/auth/register', async (req, res) => {
     email_confirm: true
   });
   if(error) return res.status(400).json({ error: error.message });
-  // Auto-login after register
   const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
   if(loginError) return res.status(400).json({ error: loginError.message });
   res.json({ user: loginData.user, session: loginData.session });
